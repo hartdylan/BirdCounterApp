@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "883383711525",
+    "firebase_url": "https://birdcounter-8d2ab.firebaseio.com",
+    "project_id": "birdcounter-8d2ab",
+    "storage_bucket": "birdcounter-8d2ab.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:883383711525:android:48239eec33d534b2c2cccc",
+        "android_client_info": {
+          "package_name": "augustana.birdcounter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "883383711525-3fs0734gbi7an8itpngffgljm9epm659.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "augustana.birdcounter",
+            "certificate_hash": "e7703ff25b4d78752abdad69f6e209b47bac69ec"
+          }
+        },
+        {
+          "client_id": "883383711525-9h37e8sekcg5igugdae81c4svpsvpgd2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvU5CZq5LbBlam5KngKa5tcMni_AtQ0MI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "883383711525-9h37e8sekcg5igugdae81c4svpsvpgd2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
