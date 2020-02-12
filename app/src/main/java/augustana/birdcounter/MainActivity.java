@@ -1,7 +1,9 @@
 package augustana.birdcounter;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewPropertyAnimatorListenerAdapter;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -14,40 +16,37 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-
-import org.w3c.dom.Document;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
 
-    String[] birds = {"Blue Jay", "Kiwi", "Bird3", "Bird4","Bird5", "Bird6", "Bird7", "Bird8", "Bird9", "Bird10", "Bird11", "Bird12", "Bird13", "Bird14","Bird15", "Bird16", "Bird17", "Bird18", "Bird19", "Bird20"};
-    HashMap<String, Integer> mp;
+    String[] birds = {"Blue Jay", "Kiwi", "Bird3", "Bird4", "Bird5", "Bird6", "Bird7", "Bird8", "Bird9", "Bird10", "Bird11", "Bird12", "Bird13", "Bird14", "Bird15", "Bird16", "Bird17", "Bird18", "Bird19", "Bird20"};
     String curBird;
     Spinner sp;
     Adapter ad;
-    TextView name,count;
+    TextView name, count;
     Button fBtn, uBtn;
     ImageView bImg;
-    FirebaseDatabase db;
     DatabaseReference ref;
-    FirebaseFirestore fStore;
-
+    DatabaseReference ref2;
+    Long curVal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mp = initializeMap(birds);
+        curBird = birds[0];
+        ref = FirebaseDatabase.getInstance().getReference(curBird);
+        ref2 = ref.child("count");
         bImg = findViewById(R.id.birdImg);
         name = findViewById(R.id.birdName);
         count = findViewById(R.id.foundText);
@@ -56,58 +55,70 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         fBtn.setOnClickListener(this);
         uBtn.setOnClickListener(this);
         sp = findViewById(R.id.spinner);
-        ad = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds );
+        ad = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
         sp.setAdapter((SpinnerAdapter) ad);
         sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 curBird = birds[position];
+                curVal = updateBirdRef();
                 name.setText(curBird);
-                updateDisplayCount();
-                if(curBird.equals("Blue Jay")) {
+                if (curBird.equals("Blue Jay")) {
                     bImg.setImageResource(R.drawable.bluejay);
                 } else if (curBird.equals("Kiwi")) {
                     bImg.setImageResource(R.drawable.kiwi);
                 }
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
-    }
 
+        ref = FirebaseDatabase.getInstance().getReference(curBird.toLowerCase().replaceAll(" ", ""));
+        ref2 = ref.child("count");
+        ref2.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                curVal = dataSnapshot.getValue(Long.class);
+                count.setText("Found : " + dataSnapshot.getValue(Long.class));
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+    }
 
     @Override
     public void onClick(View v) {
-        if(v == fBtn) {
-            mp.put(curBird, mp.get(curBird)+1);
-        } else if (v == uBtn && mp.get(curBird) > 0) {
-            mp.put(curBird, mp.get(curBird)-1);
+        if (v == fBtn) {
+            ref2.setValue(curVal+1);
+        } else if (v == uBtn && curVal > 0) {
+            ref2.setValue(curVal-1);
         }
-        updateDisplayCount();
-//        updateDB();
     }
 
-    public HashMap<String, Integer> initializeMap(String[] birdTypes) {
-        HashMap<String, Integer> map = new HashMap<>();
-        for(String name: birdTypes) {
-            map.put(name, 0);
-        }
-        return map;
-    }
+    public Long updateBirdRef() {
+        ref = FirebaseDatabase.getInstance().getReference(curBird.toLowerCase().replaceAll(" ", ""));
+        ref2 = ref.child("count");
+        ref2.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                curVal = dataSnapshot.getValue(Long.class);
+                count.setText("Found : " + dataSnapshot.getValue(Long.class));
+            }
 
-    public void updateDisplayCount() {
-        count.setText("Found : " + mp.get(curBird));
-        }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-//    public void updateDB() {
-//        fStore = FirebaseFirestore.getInstance();
-//        DocumentReference ref = fStore.collection("birds").document("bluejay");
-//        ref.addSnapshotListener(this, new EventListener<DocumentSnapshot>() {
-//            @Override
-//            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
-//                System.out.println(documentSnapshot.getString("name"));
-//                System.out.println(documentSnapshot.getString("count"));
-//            }
-//        });
+            }
+        });
+        return curVal;
     }
+}
+
+
