@@ -13,6 +13,7 @@ import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
+import com.google.android.gms.common.util.ArrayUtils;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -20,6 +21,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -32,12 +38,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     String curBird;
     Spinner sp;
     Adapter ad;
-    TextView name, count;
-    Button fBtn, uBtn;
+    TextView name, count, sortText;
+    Button fBtn, uBtn, rBtn, sBtn;
     ImageView bImg;
     DatabaseReference ref;
     DatabaseReference ref2;
     Long curVal;
+    boolean sortAZ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,10 +57,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         bImg = findViewById(R.id.birdImg);
         name = findViewById(R.id.birdName);
         count = findViewById(R.id.foundText);
+        sortText = findViewById(R.id.sortMethodText);
+        sortAZ = true;
         fBtn = findViewById(R.id.foundBtn);
         uBtn = findViewById(R.id.undoBtn);
+        rBtn = findViewById(R.id.resetBtn);
+        sBtn = findViewById(R.id.sortBtn);
         fBtn.setOnClickListener(this);
         uBtn.setOnClickListener(this);
+        rBtn.setOnClickListener(this);
+        sBtn.setOnClickListener(this);
         sp = findViewById(R.id.spinner);
         ad = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
         sp.setAdapter((SpinnerAdapter) ad);
@@ -88,8 +101,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             ref2.setValue(curVal+1);
         } else if (v == uBtn && curVal > 0) {
             ref2.setValue(curVal-1);
+        } else if (v == rBtn){
+            resetCurBird();
         } else {
-            resetAll();
+            setSortingMethod();
         }
     }
 
@@ -158,15 +173,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public void resetAll() {
-        for(String bird: birds) {
+    public void resetCurBird() {
             ref = FirebaseDatabase.getInstance().getReference(curBird);
             ref2 = ref.child("count");
             ref2.setValue(0);
             curVal = (long) 0;
-        }
-
     }
+
+    public void setSortingMethod() {
+
+        if(sortAZ) { // if sortAZ is true then flip it to sorting by Z-A.
+            sBtn.setText("Z-A");
+            Arrays.sort(birds, Collections.reverseOrder(new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                    return o1.compareTo(o2);
+                }
+            }));
+            sortAZ = false;
+
+        } else { // if sortAZ is false then flip it sort by AZ
+            sBtn.setText("A-Z");
+            Arrays.sort(birds);
+            sortAZ = true;
+        }
+        ad = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
+        sp.setAdapter((SpinnerAdapter) ad);
+    }
+
 }
 
 
