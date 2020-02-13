@@ -2,6 +2,8 @@ package augustana.birdcounter;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Adapter;
@@ -13,7 +15,6 @@ import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
-import com.google.android.gms.common.util.ArrayUtils;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -21,56 +22,181 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
-
+/**
+ * Name: Dylan Hart
+ * Date: 13 Feb 2020
+ * Class: CSC490
+ * Program name: Bird Counter
+ * Description:
+ * A simple application that allows the user to track 20 different birds from their smart phone and will
+ * save the latest birdCount of each bird to a real time database.
+ * Three features:
+ * 1. 'Spinner' or select box with the birds available to observe within it.
+ * 2. Button above 'Spinner' that allows to sort alphabetically (or in reverse alphabetically).
+ * 3. Found, undo, and reset button for actually tracking the observed birds.
+ */
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-
+    /*
+    Global variables for the project
+     */
     String[] birds = {"Blue Jay", "Kiwi", "Golden Pheasant", "Philippine Eagle",
             "Peregrine Falcon", "Frigatebird", "Loon", "Merlin", "Nighthawk", "Oriole",
-            "Puffin", "Quail", "Cassowary", "Emperor Penguin", "Andean Cock-of-the-Rock", "Hoatzin", "Shoebill",
+            "Puffin", "Quail", "Cassowary", "Emperor Penguin", "Andean Cock of the Rock", "Hoatzin", "Shoebill",
             "California Condor", "Arctic Tern", "Marabou Stork"};
-    String curBird;
-    Spinner sp;
-    Adapter ad;
-    TextView name, count, sortText;
-    Button fBtn, uBtn, rBtn, sBtn;
-    ImageView bImg;
-    DatabaseReference ref;
-    DatabaseReference ref2;
-    Long curVal;
-    boolean sortAZ;
+    String currentBirdStr;
+    Spinner spinner;
+    Adapter adapter;
+    TextView birdName, birdCount;
+    Button foundButton, undoButton, resetButton, sortButton;
+    ImageView birdImage;
+    DatabaseReference currentBirdDBRef;
+    DatabaseReference currentBirdCountDBRef;
+    Long currentFoundValue;
+    boolean alphabeticalSort;
+    int drawableId;
 
+    /**
+     * References to objects in the xml file are stored and created here as well as the setup of the
+     * screen elements such as the current bird and the stored value from the database.
+     * @param savedInstanceState - Bundle storing data to pass between activities.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Arrays.sort(birds);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        curBird = birds[0];
-        ref = FirebaseDatabase.getInstance().getReference(curBird);
-        ref2 = ref.child("count");
-        bImg = findViewById(R.id.birdImg);
-        name = findViewById(R.id.birdName);
-        count = findViewById(R.id.foundText);
-        sortText = findViewById(R.id.sortMethodText);
-        sortAZ = true;
-        fBtn = findViewById(R.id.foundBtn);
-        uBtn = findViewById(R.id.undoBtn);
-        rBtn = findViewById(R.id.resetBtn);
-        sBtn = findViewById(R.id.sortBtn);
-        fBtn.setOnClickListener(this);
-        uBtn.setOnClickListener(this);
-        rBtn.setOnClickListener(this);
-        sBtn.setOnClickListener(this);
-        sp = findViewById(R.id.spinner);
-        ad = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
-        sp.setAdapter((SpinnerAdapter) ad);
-        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        birdImage = findViewById(R.id.birdImg);
+        birdName = findViewById(R.id.birdName);
+        birdCount = findViewById(R.id.foundText);
+        alphabeticalSort = true;
+        foundButton = findViewById(R.id.foundBtn);
+        undoButton = findViewById(R.id.undoBtn);
+        resetButton = findViewById(R.id.resetBtn);
+        sortButton = findViewById(R.id.sortBtn);
+        foundButton.setOnClickListener(this);
+        undoButton.setOnClickListener(this);
+        resetButton.setOnClickListener(this);
+        sortButton.setOnClickListener(this);
+        updateSpinner();
+        updateBirdValFromDB();
+    }
+
+    /**
+     * Method used to handle the various buttons that are displayed in the app to the user.
+     * @param v - Used to handle event based interactions from the user and handled in the
+     *          if/else block.
+     */
+    @Override
+    public void onClick(View v) {
+        if (v == foundButton) {
+            currentBirdCountDBRef.setValue(currentFoundValue +1);
+        } else if (v == undoButton) {
+            if(currentFoundValue > 0) {
+                currentBirdCountDBRef.setValue(currentFoundValue - 1);
+            }
+        } else if (v == resetButton){
+            resetCurBird();
+        } else {
+            setSortingMethod();
+        }
+    }
+
+    /**
+     * Method used to update bird found birdCount when the DB observes a change in data (Firebase).
+     * @return Long - Returns the currently displayed bird's DB value for birdCount
+     */
+    public Long updateBirdCount() {
+        /*
+        How to learned how to make a reference to the DB and get values.
+
+        https://stackoverflow.com/questions/43293935/how-to-get-child-of-child-value-from-firebase-in-android
+         */
+        currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
+        currentBirdCountDBRef = currentBirdDBRef.child("count");
+        currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                currentFoundValue = dataSnapshot.getValue(Long.class);
+                birdCount.setText("Found : " + dataSnapshot.getValue(Long.class));
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+        return currentFoundValue;
+    }
+
+    /**
+     * Method to change all object references in xml to use the currently selected bird.
+     * @param pos - Passed in as the bird in pos x of the bird array to be a way to setup
+     *            the new bird values / assets in the app.
+     */
+    public void setNewBird(int pos) {
+        /*
+        At first had a 40 line if/else block of code but now with the help of the
+        below source I was able to dynamically change the bird image.
+
+        https://blog.danlew.net/2009/12/27/dynamically_retrieving_resources_in_android/
+         */
+        currentBirdStr = birds[pos];
+        Resources r = getResources();
+        drawableId = r.getIdentifier(currentBirdStr.toLowerCase().replaceAll(" ", ""), "drawable", "augustana.birdcounter");
+        birdImage.setImageResource(drawableId);
+        currentFoundValue = updateBirdCount();
+        birdName.setText(currentBirdStr);
+
+    }
+
+    /**
+     * Method used to reset the count of the currently selected bird and update the DB.
+     */
+    public void resetCurBird() {
+            currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
+            currentBirdCountDBRef = currentBirdDBRef.child("count");
+            currentBirdCountDBRef.setValue(0);
+            currentFoundValue = (long) 0;
+    }
+
+    /**
+     * Method used to determine which sorting method is selected by the user and update it
+     * accordingly in the spinner object.
+     */
+    public void setSortingMethod() {
+
+        if(alphabeticalSort) { // if alphabeticalSort is true then flip it to sorting by Z-A.
+            sortButton.setText("Z-A");
+            Arrays.sort(birds, Collections.reverseOrder(new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                    return o1.compareTo(o2);
+                }
+            }));
+            alphabeticalSort = false;
+
+        } else { // if alphabeticalSort is false then flip it sort by AZ
+            sortButton.setText("A-Z");
+            Arrays.sort(birds);
+            alphabeticalSort = true;
+        }
+        adapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
+        spinner.setAdapter((SpinnerAdapter) adapter);
+    }
+
+    /**
+     * Method that handles state changes of the spinner object to update the bird that is currently
+     * desired to be viewew by the user.
+     */
+    public void updateSpinner() {
+        spinner = findViewById(R.id.spinner);
+        adapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
+        spinner.setAdapter((SpinnerAdapter) adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 setNewBird(position);
@@ -81,124 +207,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        ref = FirebaseDatabase.getInstance().getReference(curBird);
-        ref2 = ref.child("count");
-        ref2.addValueEventListener(new ValueEventListener() {
+    }
+
+    /**
+     * Method used to get the most current value of currentBird.count from the Firebase DB and
+     * set the birdCount ViewText to be that value.
+     */
+    public void updateBirdValFromDB() {
+        currentBirdStr = birds[0];
+        currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
+        currentBirdCountDBRef = currentBirdDBRef.child("birdCount");
+        currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                curVal = dataSnapshot.getValue(Long.class);
-                count.setText("Found : " + dataSnapshot.getValue(Long.class));
+                currentFoundValue = dataSnapshot.getValue(Long.class);
+                birdCount.setText("Found : " + dataSnapshot.getValue(Long.class));
             }
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         });
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (v == fBtn) {
-            ref2.setValue(curVal+1);
-        } else if (v == uBtn && curVal > 0) {
-            ref2.setValue(curVal-1);
-        } else if (v == rBtn){
-            resetCurBird();
-        } else {
-            setSortingMethod();
-        }
-    }
-
-    public Long updateBirdRef() {
-        ref = FirebaseDatabase.getInstance().getReference(curBird);
-        ref2 = ref.child("count");
-        ref2.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                curVal = dataSnapshot.getValue(Long.class);
-                count.setText("Found : " + dataSnapshot.getValue(Long.class));
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-        return curVal;
-    }
-
-    public void setNewBird(int pos) {
-        curBird = birds[pos];
-        curVal = updateBirdRef();
-        name.setText(curBird);
-        if (curBird.equals("Andean Cock-of-the-Rock")) {
-            bImg.setImageResource(R.drawable.andean);;
-        } else if (curBird.equals("Arctic Tern")) {
-            bImg.setImageResource(R.drawable.tern);
-        } else if (curBird.equals("Blue Jay")) {
-            bImg.setImageResource(R.drawable.bluejay);
-        } else if (curBird.equals("California Condor")) {
-            bImg.setImageResource(R.drawable.condor);
-        } else if (curBird.equals("Cassowary")) {
-            bImg.setImageResource(R.drawable.cassowary);
-        } else if (curBird.equals("Emperor Penguin")) {
-            bImg.setImageResource(R.drawable.emperorpenguin);
-        } else if (curBird.equals("Frigatebird")) {
-            bImg.setImageResource(R.drawable.frigatebird);
-        } else if (curBird.equals("Golden Pheasant")) {
-            bImg.setImageResource(R.drawable.goldenpheasant);
-        } else if (curBird.equals("Hoatzin")) {
-            bImg.setImageResource(R.drawable.hoatzin);
-        } else if (curBird.equals("Kiwi")) {
-            bImg.setImageResource(R.drawable.kiwi);
-        } else if (curBird.equals("Loon")) {
-            bImg.setImageResource(R.drawable.loon);
-        } else if (curBird.equals("Marabou Stork")) {
-            bImg.setImageResource(R.drawable.stork);
-        } else if (curBird.equals("Merlin")) {
-            bImg.setImageResource(R.drawable.merlin);
-        } else if (curBird.equals("Nighthawk")) {
-            bImg.setImageResource(R.drawable.nighthawk);
-        } else if (curBird.equals("Oriole")) {
-            bImg.setImageResource(R.drawable.oriole);
-        } else if (curBird.equals("Peregrine Falcon")) {
-            bImg.setImageResource(R.drawable.peregrinefalcon);
-        } else if (curBird.equals("Philippine Eagle")) {
-            bImg.setImageResource(R.drawable.philippineeagle);
-        } else if (curBird.equals("Puffin")) {
-            bImg.setImageResource(R.drawable.puffin);
-        } else if (curBird.equals("Quail")) {
-            bImg.setImageResource(R.drawable.quail);
-        } else if (curBird.equals("Shoebill")) {
-            bImg.setImageResource(R.drawable.shoebill);
-        }
-    }
-
-    public void resetCurBird() {
-            ref = FirebaseDatabase.getInstance().getReference(curBird);
-            ref2 = ref.child("count");
-            ref2.setValue(0);
-            curVal = (long) 0;
-    }
-
-    public void setSortingMethod() {
-
-        if(sortAZ) { // if sortAZ is true then flip it to sorting by Z-A.
-            sBtn.setText("Z-A");
-            Arrays.sort(birds, Collections.reverseOrder(new Comparator<String>() {
-                @Override
-                public int compare(String o1, String o2) {
-                    return o1.compareTo(o2);
-                }
-            }));
-            sortAZ = false;
-
-        } else { // if sortAZ is false then flip it sort by AZ
-            sBtn.setText("A-Z");
-            Arrays.sort(birds);
-            sortAZ = true;
-        }
-        ad = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, birds);
-        sp.setAdapter((SpinnerAdapter) ad);
     }
 
 }
