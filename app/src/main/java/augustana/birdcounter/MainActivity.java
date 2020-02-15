@@ -3,6 +3,7 @@ package augustana.birdcounter;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.View;
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /*
     Global variables for the project
      */
-    String[] birds = {"Blue Jay", "Kiwi", "Golden Pheasant", "Philippine Eagle",
+    public static String[] birds = {"Blue Jay", "Kiwi", "Golden Pheasant", "Philippine Eagle",
             "Peregrine Falcon", "Frigatebird", "Loon", "Merlin", "Nighthawk", "Oriole",
             "Puffin", "Quail", "Cassowary", "Emperor Penguin", "Andean Cock of the Rock", "Hoatzin", "Shoebill",
             "California Condor", "Arctic Tern", "Marabou Stork"};
@@ -52,10 +53,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Spinner spinner;
     Adapter adapter;
     TextView birdName, birdCount;
-    Button foundButton, undoButton, resetButton, sortButton;
+    Button foundButton, undoButton, resetButton, sortButton, birdCountViewBtn;
     ImageView birdImage;
-    DatabaseReference currentBirdDBRef;
-    DatabaseReference currentBirdCountDBRef;
+    public static DatabaseReference currentBirdDBRef;
+    public static DatabaseReference currentBirdCountDBRef;
     Long currentFoundValue;
     boolean alphabeticalSort;
     int drawableId;
@@ -77,10 +78,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         undoButton = findViewById(R.id.undoBtn);
         resetButton = findViewById(R.id.resetBtn);
         sortButton = findViewById(R.id.sortBtn);
+        birdCountViewBtn = findViewById(R.id.birdCountViewBtn);
         foundButton.setOnClickListener(this);
         undoButton.setOnClickListener(this);
         resetButton.setOnClickListener(this);
         sortButton.setOnClickListener(this);
+        birdCountViewBtn.setOnClickListener(this);
+        Arrays.sort(birds);
         updateSpinner();
         updateBirdValFromDB();
     }
@@ -100,8 +104,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         } else if (v == resetButton){
             resetCurBird();
-        } else {
+        } else if (v == sortButton) {
             setSortingMethod();
+        } else if (v == birdCountViewBtn) {
+            openTopBirdCountView();
         }
     }
 
@@ -216,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void updateBirdValFromDB() {
         currentBirdStr = birds[0];
         currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
-        currentBirdCountDBRef = currentBirdDBRef.child("birdCount");
+        currentBirdCountDBRef = currentBirdDBRef.child("count");
         currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -229,6 +235,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
+    public void openTopBirdCountView() {
+        Intent intent = new Intent(this, TopBirdCounts.class);
+        startActivity(intent);
+    }
 }
 
 
