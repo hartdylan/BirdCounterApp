@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.view.View;
 import android.widget.Adapter;
 import android.widget.AdapterView;
@@ -49,14 +50,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             "Peregrine Falcon", "Frigatebird", "Loon", "Merlin", "Nighthawk", "Oriole",
             "Puffin", "Quail", "Cassowary", "Emperor Penguin", "Andean Cock of the Rock", "Hoatzin", "Shoebill",
             "California Condor", "Arctic Tern", "Marabou Stork"};
-    String currentBirdStr;
+    static String currentBirdStr;
     Spinner spinner;
     Adapter adapter;
     TextView birdName, birdCount;
     Button foundButton, undoButton, resetButton, sortButton, birdCountViewBtn;
     ImageView birdImage;
+    public static DatabaseReference birdDB = FirebaseDatabase.getInstance().getReference("birds");
     public static DatabaseReference currentBirdDBRef;
     public static DatabaseReference currentBirdCountDBRef;
+    public static DatabaseReference currentBirdNameDBRef;
     Long currentFoundValue;
     boolean alphabeticalSort;
     int drawableId;
@@ -121,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         https://stackoverflow.com/questions/43293935/how-to-get-child-of-child-value-from-firebase-in-android
          */
-        currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
+        currentBirdDBRef = birdDB.child(currentBirdStr);
         currentBirdCountDBRef = currentBirdDBRef.child("count");
         currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -163,10 +166,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * Method used to reset the count of the currently selected bird and update the DB.
      */
     public void resetCurBird() {
-            currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
-            currentBirdCountDBRef = currentBirdDBRef.child("count");
-            currentBirdCountDBRef.setValue(0);
-            currentFoundValue = (long) 0;
+        currentBirdDBRef = birdDB.child(currentBirdStr);
+        currentBirdCountDBRef = currentBirdDBRef.child("count");
+        currentBirdCountDBRef.setValue(0);
+        currentFoundValue = (long) 0;
+        currentBirdNameDBRef = currentBirdDBRef.child("name");
+        currentBirdNameDBRef.setValue(currentBirdStr);
+
     }
 
     /**
@@ -220,7 +226,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * set the birdCount ViewText to be that value.
      */
     public void updateBirdValFromDB() {
-        currentBirdStr = birds[0];
+        currentBirdStr = "";
         currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
         currentBirdCountDBRef = currentBirdDBRef.child("count");
         currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
