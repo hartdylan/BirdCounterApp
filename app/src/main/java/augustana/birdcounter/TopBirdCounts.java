@@ -3,6 +3,7 @@ package augustana.birdcounter;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.ListView;
 
@@ -13,6 +14,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TopBirdCounts extends AppCompatActivity {
@@ -42,10 +44,9 @@ public class TopBirdCounts extends AppCompatActivity {
                     Bird bird = birdSnapshot.getValue(Bird.class);
                     birdList.add(bird);
                 }
-
+                Collections.sort(birdList, Collections.<Bird>reverseOrder());
                 BirdListAdapter adapter = new BirdListAdapter(TopBirdCounts.this, birdList);
                 birdCountList.setAdapter(adapter);
-
             }
 
             @Override
@@ -53,7 +54,7 @@ public class TopBirdCounts extends AppCompatActivity {
 
             }
         });
-
     }
+
 }
 

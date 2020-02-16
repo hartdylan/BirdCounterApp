@@ -1,8 +1,6 @@
 package augustana.birdcounter;
 
-
-
-public class Bird {
+public class Bird  implements Comparable<Bird> {
 
     String name;
     long count;
@@ -24,11 +22,8 @@ public class Bird {
         return count;
     }
 
-    public void setName(String m) {
-        this.name = m;
-    }
-
-    public void setCount(long d) {
-        this.count = d;
+    @Override
+    public int compareTo(Bird o) {
+        return (int) (this.getCount() - o.getCount());
     }
 }
