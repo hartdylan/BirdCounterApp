@@ -3,7 +3,6 @@ package augustana.birdcounter;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.ListView;
 
@@ -17,13 +16,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Class that is used to handle the second activity called top bird counts.
+ */
 public class TopBirdCounts extends AppCompatActivity {
 
+    // fields
     ListView birdCountList;
     DatabaseReference birdDB;
     List<Bird> birdList;
 
-
+    /**
+     * Method used to initialize the view and fields
+     * @param savedInstanceState - Not too sure
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,8 +37,11 @@ public class TopBirdCounts extends AppCompatActivity {
         birdCountList = findViewById(R.id.birdCountList);
         birdDB = FirebaseDatabase.getInstance().getReference("birds");
         birdList = new ArrayList<>();
-     }
+    }
 
+    /**
+     * Method used to update the current list of values of birds that will be used in the list view item.
+     */
     @Override
     protected void onStart() {
         super.onStart();
@@ -40,7 +49,7 @@ public class TopBirdCounts extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 birdList.clear();
-                for(DataSnapshot birdSnapshot: dataSnapshot.getChildren()) {
+                for (DataSnapshot birdSnapshot : dataSnapshot.getChildren()) {
                     Bird bird = birdSnapshot.getValue(Bird.class);
                     birdList.add(bird);
                 }

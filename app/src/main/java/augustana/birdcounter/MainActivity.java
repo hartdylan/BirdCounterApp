@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.view.View;
 import android.widget.Adapter;
 import android.widget.AdapterView;
@@ -29,16 +28,13 @@ import java.util.Comparator;
 
 /**
  * Name: Dylan Hart
- * Date: 13 Feb 2020
+ * Date: 18 Feb 2020
  * Class: CSC490
  * Program name: Bird Counter
  * Description:
- * A simple application that allows the user to track 20 different birds from their smart phone and will
- * save the latest birdCount of each bird to a real time database.
- * Three features:
- * 1. 'Spinner' or select box with the birds available to observe within it.
- * 2. Button above 'Spinner' that allows to sort alphabetically (or in reverse alphabetically).
- * 3. Found, undo, and reset button for actually tracking the observed birds.
+ * A simple application that will allow a user to track up to 20 different birds and store the data
+ * in a realtime Firebase database. There is also a secondary screen that presents the end user with
+ * the top bird count data directly from the database in highest to lowest order.
  */
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -59,7 +55,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static DatabaseReference birdDB = FirebaseDatabase.getInstance().getReference("birds");
     public static DatabaseReference currentBirdDBRef;
     public static DatabaseReference currentBirdCountDBRef;
-    public static DatabaseReference currentBirdNameDBRef;
     Long currentFoundValue;
     boolean alphabeticalSort;
     int drawableId;
@@ -89,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         birdCountViewBtn.setOnClickListener(this);
         Arrays.sort(birds);
         updateSpinner();
-        updateBirdValFromDB();
+        updateBirdCount();
     }
 
     /**
@@ -115,15 +110,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     * Method used to update bird found birdCount when the DB observes a change in data (Firebase).
+     * Method that us used to display the currently stored value in the DB for the current
+     * bird and assign that value to currentFoundValue.
      * @return Long - Returns the currently displayed bird's DB value for birdCount
      */
     public Long updateBirdCount() {
-        /*
-        How to learned how to make a reference to the DB and get values.
-
-        https://stackoverflow.com/questions/43293935/how-to-get-child-of-child-value-from-firebase-in-android
-         */
+        currentBirdStr = "Andean Cock of the Rock"; // Start with first bird after onCreate is started (user opens app).
         currentBirdDBRef = birdDB.child(currentBirdStr);
         currentBirdCountDBRef = currentBirdDBRef.child("count");
         currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
@@ -142,17 +134,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     * Method to change all object references in xml to use the currently selected bird.
-     * @param pos - Passed in as the bird in pos x of the bird array to be a way to setup
-     *            the new bird values / assets in the app.
+     * Method to change all object references in xml to use the currently selected bird and update
+     * the value of currentFoundValue so that the display can be updated.
+     * @param pos - Parameter that is passed in from the updateSpinner method as the user may
+     *            select a new bird to 'find'.
      */
     public void setNewBird(int pos) {
-        /*
-        At first had a 40 line if/else block of code but now with the help of the
-        below source I was able to dynamically change the bird image.
-
-        https://blog.danlew.net/2009/12/27/dynamically_retrieving_resources_in_android/
-         */
         currentBirdStr = birds[pos];
         Resources r = getResources();
         drawableId = r.getIdentifier(currentBirdStr.toLowerCase().replaceAll(" ", ""), "drawable", "augustana.birdcounter");
@@ -163,16 +150,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     * Method used to reset the count of the currently selected bird and update the DB.
+     * Method used to reset the count of the currently selected bird and update the DB as well as
+     * the currentFoundValue.
      */
     public void resetCurBird() {
         currentBirdDBRef = birdDB.child(currentBirdStr);
         currentBirdCountDBRef = currentBirdDBRef.child("count");
         currentBirdCountDBRef.setValue(0);
         currentFoundValue = (long) 0;
-        currentBirdNameDBRef = currentBirdDBRef.child("name");
-        currentBirdNameDBRef.setValue(currentBirdStr);
-
     }
 
     /**
@@ -202,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * Method that handles state changes of the spinner object to update the bird that is currently
-     * desired to be viewew by the user.
+     * desired to be viewed by the user.
      */
     public void updateSpinner() {
         spinner = findViewById(R.id.spinner);
@@ -219,26 +204,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-    }
-
-    /**
-     * Method used to get the most current value of currentBird.count from the Firebase DB and
-     * set the birdCount ViewText to be that value.
-     */
-    public void updateBirdValFromDB() {
-        currentBirdStr = "";
-        currentBirdDBRef = FirebaseDatabase.getInstance().getReference(currentBirdStr);
-        currentBirdCountDBRef = currentBirdDBRef.child("count");
-        currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                currentFoundValue = dataSnapshot.getValue(Long.class);
-                birdCount.setText("Found : " + dataSnapshot.getValue(Long.class));
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        });
     }
 
     public void openTopBirdCountView() {
