@@ -12,6 +12,12 @@ public class Bird  implements Comparable<Bird> {
     long count;
 
     // constructor
+
+    public Bird() {
+        this.name = "";
+        this.count = (long) 0;
+    }
+
     public Bird(String n, long c) {
         this.name = n;
         this.count = c;

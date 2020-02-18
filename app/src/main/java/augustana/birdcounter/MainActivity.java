@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         sortButton.setOnClickListener(this);
         birdCountViewBtn.setOnClickListener(this);
         Arrays.sort(birds);
+        currentBirdStr = birds[0];
         updateSpinner();
         updateBirdCount();
     }
@@ -115,7 +116,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * @return Long - Returns the currently displayed bird's DB value for birdCount
      */
     public Long updateBirdCount() {
-        currentBirdStr = "Andean Cock of the Rock"; // Start with first bird after onCreate is started (user opens app).
         currentBirdDBRef = birdDB.child(currentBirdStr);
         currentBirdCountDBRef = currentBirdDBRef.child("count");
         currentBirdCountDBRef.addValueEventListener(new ValueEventListener() {
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         drawableId = r.getIdentifier(currentBirdStr.toLowerCase().replaceAll(" ", ""), "drawable", "augustana.birdcounter");
         birdImage.setImageResource(drawableId);
         currentFoundValue = updateBirdCount();
-        birdName.setText(currentBirdStr);
+        birdName.setText(birds[pos]);
 
     }
 
